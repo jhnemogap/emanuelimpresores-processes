@@ -17,7 +17,15 @@
     "moduleResolution": "NodeNext",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "business/*": ["src/business/*"],
+      "shared/*": ["src/hared/*"],
+      "styles/*": ["src/styles/*"],
+      "pages/*": ["src/pages/*"],
+      "components/*": ["src/components/*"]
+    }
   },
   "include": [
     "next-env.d.ts",
