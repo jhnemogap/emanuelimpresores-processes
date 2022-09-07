@@ -1,5 +1,11 @@
+import { Heading } from "@chakra-ui/react";
+
 function NewInvoicePage() {
-  return <div>NEW INVOICE Page</div>
+  return (
+    <Heading as="h1" size="lg">
+      NEW INVOICE PAGE
+    </Heading>
+  );
 }
 
 export default NewInvoicePage;

@@ -1,5 +1,11 @@
+import { Heading } from "@chakra-ui/react";
+
 function RootPage() {
-  return <div>Welcome to Next.js!</div>
+  return (
+    <Heading as="h1" size="lg">
+      ROOT PAGE
+    </Heading>
+  );
 }
 
 export default RootPage;
