@@ -16,9 +16,9 @@
   "scripts": {
     "type-check": "tsc",
     "lint": "next lint",
-    "dev": "next dev -p 4000",
+    "dev": "next dev -p 4001",
     "build": "next build",
-    "start": "next start -p 4000",
+    "start": "next start -p 4001",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
