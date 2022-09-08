@@ -69,14 +69,16 @@ typings/
 .yarn-integrity
 
 # dotenv environment variables file
-.env
-.env.test
+.env.local*
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 
-# Next.js build output
+# Next.js and others build output
 .next
+.swc/
+out/
+build
 
 # Nuxt.js build / generate output
 .nuxt
@@ -102,3 +104,12 @@ dist
 
 # TernJS port file
 .tern-port
+
+# vercel
+.vercel
+
+# misc
+.DS_Store
+*.pem
+.idea/
+/.vscode/
