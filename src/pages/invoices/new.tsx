@@ -15,10 +15,8 @@ import {
   Textarea,
   VStack,
 } from '@chakra-ui/react';
+import { ForwardedRef, forwardRef, useRef, useState } from 'react';
 import { MinusIcon, PlusSquareIcon } from '@chakra-ui/icons';
-
-import { useEffect, useState } from 'react';
-import { JSXElement } from '@babel/types';
 
 function NewInvoicePage() {
   return (
@@ -84,22 +82,34 @@ function NewInvoicePage() {
 export default NewInvoicePage;
 
 function InvoiceProducts() {
-  const [products, setProducts] = useState<unknown[]>([]);
+  const PRODUCT_INIT = { amount: 0, unitValue: 0, description: '' };
+
+  const products = useRef([{ ...PRODUCT_INIT }]);
+  const [, setCN] = useState(0);
 
   const handleDeleteProduct = (index: number) => {
-    // setProducts((ps) => ps.filter((_, cIndex) => cIndex !== index - 1));
+    products.current = products.current.filter((_, idx) => idx !== index - 1);
+    setCN((ps) => ps + 1);
   }
 
   const handleAddProduct = () => {
-    setProducts((ps) => [...ps, null]);
+    products.current = [...products.current, { ...PRODUCT_INIT }];
+    setCN((ps) => ps + 1);
   }
 
   return (
-    <VStack as='section' p={2} alignItems='stretch' spacing={4} bgColor='blue.500'>
-      {products.map((_, index) => (
+    <VStack
+      as='section'
+      p={2}
+      spacing={4}
+      alignItems='stretch'
+      bgColor='blue.500'
+    >
+      {products.current.map((product, index) => (
         <InvoiceProduct
           key={`p-${index + 1}`}
-          index={index + 1}
+          product={product}
+          indexProduct={index + 1}
           onDelete={() => handleDeleteProduct(index + 1)}
         />
       ))}
@@ -110,7 +120,19 @@ function InvoiceProducts() {
   );
 }
 
-function InvoiceProduct({ index = 1, onDelete = () => null }: InvoiceProductProps) {
+function InvoiceProduct({ indexProduct = 1, onDelete = () => null, product }: InvoiceProductProps) {
+  const [, setCN] = useState(0);
+
+  const handleOnChange = ({ name, value }: { name: string; value: string; }) => {
+    if (['amount', 'unitValue'].includes(name) && !!value) {
+      product[name] = parseInt(value); // ToDo: TS error
+    }
+    else {
+      product[name] = value; // ToDo: TS error
+    }
+    setCN((ps) => ps + 1);
+  }
+
   return (
     <VStack
       as='article'
@@ -122,7 +144,7 @@ function InvoiceProduct({ index = 1, onDelete = () => null }: InvoiceProductProp
     >
       <HStack as='header' justifyContent='space-between'>
         <Heading as='h2' size='md'>
-          Elemento # {index}
+          Elemento # {indexProduct}
         </Heading>
         <IconButton
           size='xs'
@@ -137,11 +159,11 @@ function InvoiceProduct({ index = 1, onDelete = () => null }: InvoiceProductProp
       <FormControl>
         <FormLabel>Cantidad</FormLabel>
         <NumberInput
-          name={`amount-e${index}`}
+          name={`amount-${indexProduct}`}
           min={1}
           max={99_999}
-          defaultValue={0}
-          clampValueOnBlur={false}
+          value={product.amount}
+          onChange={(value) => handleOnChange({ name: 'amount', value })}
         >
           <NumberInputField />
           <NumberInputStepper>
@@ -154,11 +176,12 @@ function InvoiceProduct({ index = 1, onDelete = () => null }: InvoiceProductProp
       <FormControl>
         <FormLabel>Valor Unitario</FormLabel>
         <NumberInput
-          name={`unit-value-e${index}`}
+          name={`unitValue-${indexProduct}`}
           min={1}
           max={9_999_999}
-          defaultValue={0}
           clampValueOnBlur={false}
+          value={product.unitValue}
+          onChange={(value) => handleOnChange({ name: 'unitValue', value })}
         >
           <NumberInputField />
           <NumberInputStepper>
@@ -170,13 +193,24 @@ function InvoiceProduct({ index = 1, onDelete = () => null }: InvoiceProductProp
 
       <FormControl>
         <FormLabel>Descripción producto / servicio</FormLabel>
-        <Textarea name={`description-e${index}`} defaultValue={''} />
+        <Textarea
+          name={`description-${indexProduct}`}
+          value={product.description}
+          onChange={(e) => handleOnChange({ name: 'description', value: e.currentTarget.value })}
+        />
       </FormControl>
     </VStack>
   );
 }
 
 interface InvoiceProductProps {
-  index: number;
+  indexProduct: number;
   onDelete?: () => void;
+  product: Product;
+}
+
+interface Product {
+  amount: number;
+  unitValue: number;
+  description: string;
 }
