@@ -15,25 +15,40 @@ import {
   Textarea,
   VStack,
 } from '@chakra-ui/react';
-import { ForwardedRef, forwardRef, useRef, useState } from 'react';
+import { useState } from 'react';
 import { MinusIcon, PlusSquareIcon } from '@chakra-ui/icons';
 
+import type { Dispatch, SetStateAction, SyntheticEvent } from 'react';
+
 function NewInvoicePage() {
+  const handleOnSubmit = (event: SyntheticEvent) => {
+    event.preventDefault();
+    const formData = new FormData(event.target as HTMLFormElement);
+    const inputEntries = [...formData.entries()];
+    const regExpProducts = /(\d+-).*/;
+    console.info(inputEntries.reduce((acc, cItem) => {
+      const toReplace = cItem[0].match(regExpProducts)?.[1];
+      return {
+        ...acc,
+        [toReplace ? cItem[0].replace(toReplace, '') : cItem[0]]: cItem[1],
+      };
+    }, {}));
+  };
+
   return (
     <Box as='main'>
       <Heading as='h1' size='xl' mb={6}>
         Crea una nueva factura
       </Heading>
 
-      <VStack as='form' spacing={4} alignItems='stretch'>
+      <VStack as='form' spacing={4} alignItems='stretch' onSubmit={handleOnSubmit}>
         <FormControl>
           <FormLabel>FACTURA DE VENTA No.</FormLabel>
           <NumberInput
-            name='invoice-number'
-            defaultValue={0}
+            isRequired
+            name='invoiceNumber'
             min={1}
             max={9_999}
-            clampValueOnBlur={false}
           >
             <NumberInputField />
             <NumberInputStepper>
@@ -45,35 +60,39 @@ function NewInvoicePage() {
 
         <FormControl>
           <FormLabel>ORDEN DE COMPRA No.</FormLabel>
-          <Input name='order-name' type='text' />
+          <Input name='orderName' type='text' />
         </FormControl>
 
         <FormControl>
           <FormLabel>FORMA DE PAGO</FormLabel>
-          <Input name='way-to-pay' type='text' />
+          <Input name='wayToPay' type='text' />
         </FormControl>
 
         <FormControl>
           <FormLabel>Señores</FormLabel>
-          <Textarea name='for-whom' />
+          <Textarea isRequired name='forWhom' />
         </FormControl>
 
         <FormControl>
           <FormLabel>FECHA</FormLabel>
-          <Input name='date-start' type='date' />
+          <Input name='dateStart' type='date' />
         </FormControl>
 
         <FormControl>
           <FormLabel>FECHA DE VENCIMIENTO</FormLabel>
-          <Input name='date-end' type='date' />
+          <Input name='dateEnd' type='date' />
         </FormControl>
 
         <InvoiceProducts />
 
         <FormControl>
           <FormLabel>SON:</FormLabel>
-          <Textarea name='description' placeholder='Precio total en palabras'/>
+          <Textarea isRequired name='totalToWords' placeholder='Precio total en palabras'/>
         </FormControl>
+
+        <Button variant='ghost' type='submit'>
+          Generar Factura
+        </Button>
       </VStack>
     </Box>
   );
@@ -82,19 +101,16 @@ function NewInvoicePage() {
 export default NewInvoicePage;
 
 function InvoiceProducts() {
-  const PRODUCT_INIT = { amount: 0, unitValue: 0, description: '' };
+  const PRODUCT_INIT: Product = { amount: 0, unitValue: 0, description: '' };
 
-  const products = useRef([{ ...PRODUCT_INIT }]);
-  const [, setCN] = useState(0);
+  const [products, setProducts] = useState<Product[]>([{ ...PRODUCT_INIT }]);
 
   const handleDeleteProduct = (index: number) => {
-    products.current = products.current.filter((_, idx) => idx !== index - 1);
-    setCN((ps) => ps + 1);
+    setProducts((ps) => ps.filter((_, idx) => idx !== index - 1));
   }
 
   const handleAddProduct = () => {
-    products.current = [...products.current, { ...PRODUCT_INIT }];
-    setCN((ps) => ps + 1);
+    setProducts((ps) => [...ps, { ...PRODUCT_INIT }]);
   }
 
   return (
@@ -105,32 +121,36 @@ function InvoiceProducts() {
       alignItems='stretch'
       bgColor='blue.500'
     >
-      {products.current.map((product, index) => (
+      {products.map((product, index) => (
         <InvoiceProduct
           key={`p-${index + 1}`}
           product={product}
+          setP={setProducts}
           indexProduct={index + 1}
           onDelete={() => handleDeleteProduct(index + 1)}
         />
       ))}
-      <Button variant='ghost' leftIcon={<PlusSquareIcon />} onClick={handleAddProduct}>
-        Agregar producto
-      </Button>
+        <Button variant='ghost' leftIcon={<PlusSquareIcon />} onClick={handleAddProduct}>
+          Agregar producto
+        </Button>
     </VStack>
   );
 }
 
-function InvoiceProduct({ indexProduct = 1, onDelete = () => null, product }: InvoiceProductProps) {
-  const [, setCN] = useState(0);
+function InvoiceProduct(props: InvoiceProductProps) {
+  const { indexProduct = 1, onDelete = () => null, product, setP } = props;
+
+  const [totalValue , setTotalValue] = useState<number>(0);
 
   const handleOnChange = ({ name, value }: { name: string; value: string; }) => {
+    let newValue: string | number = value;
     if (['amount', 'unitValue'].includes(name) && !!value) {
-      product[name] = parseInt(value); // ToDo: TS error
+      newValue = parseInt(value);
+      setTotalValue(name === 'amount' ? newValue * product.unitValue : newValue * product.amount);
     }
-    else {
-      product[name] = value; // ToDo: TS error
-    }
-    setCN((ps) => ps + 1);
+    setP((ps) => ps.map(
+      (item, index) => index === indexProduct - 1 ? ({ ...item, [name]: newValue }) : item
+    ));
   }
 
   return (
@@ -159,10 +179,11 @@ function InvoiceProduct({ indexProduct = 1, onDelete = () => null, product }: In
       <FormControl>
         <FormLabel>Cantidad</FormLabel>
         <NumberInput
-          name={`amount-${indexProduct}`}
+          isRequired
+          name={`${indexProduct}-amount`}
           min={1}
           max={99_999}
-          value={product.amount}
+          value={product.amount || ''}
           onChange={(value) => handleOnChange({ name: 'amount', value })}
         >
           <NumberInputField />
@@ -176,11 +197,11 @@ function InvoiceProduct({ indexProduct = 1, onDelete = () => null, product }: In
       <FormControl>
         <FormLabel>Valor Unitario</FormLabel>
         <NumberInput
-          name={`unitValue-${indexProduct}`}
+          isRequired
+          name={`${indexProduct}-unitValue`}
           min={1}
           max={9_999_999}
-          clampValueOnBlur={false}
-          value={product.unitValue}
+          value={product.unitValue || ''}
           onChange={(value) => handleOnChange({ name: 'unitValue', value })}
         >
           <NumberInputField />
@@ -192,9 +213,24 @@ function InvoiceProduct({ indexProduct = 1, onDelete = () => null, product }: In
       </FormControl>
 
       <FormControl>
+        <FormLabel>Valor Total</FormLabel>
+        <NumberInput
+          isDisabled
+          isRequired
+          name={`${indexProduct}-totalValue`}
+          min={1}
+          max={9_999_999}
+          value={totalValue || ''}
+        >
+          <NumberInputField />
+        </NumberInput>
+      </FormControl>
+
+      <FormControl>
         <FormLabel>Descripción producto / servicio</FormLabel>
         <Textarea
-          name={`description-${indexProduct}`}
+          isRequired
+          name={`${indexProduct}-description`}
           value={product.description}
           onChange={(e) => handleOnChange({ name: 'description', value: e.currentTarget.value })}
         />
@@ -207,6 +243,7 @@ interface InvoiceProductProps {
   indexProduct: number;
   onDelete?: () => void;
   product: Product;
+  setP: Dispatch<SetStateAction<Product[]>>;
 }
 
 interface Product {
