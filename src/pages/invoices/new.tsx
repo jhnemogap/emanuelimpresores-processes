@@ -15,7 +15,7 @@ import {
   Textarea,
   VStack,
 } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MinusIcon, PlusSquareIcon } from '@chakra-ui/icons';
 
 import type { Dispatch, SetStateAction, SyntheticEvent } from 'react';
@@ -25,14 +25,23 @@ function NewInvoicePage() {
     event.preventDefault();
     const formData = new FormData(event.target as HTMLFormElement);
     const inputEntries = [...formData.entries()];
-    const regExpProducts = /(\d+-).*/;
-    console.info(inputEntries.reduce((acc, cItem) => {
-      const toReplace = cItem[0].match(regExpProducts)?.[1];
+    const NUMBER_ROOT_INPUTS = 7;
+    const lengthProducts = (inputEntries.length - NUMBER_ROOT_INPUTS) / 4;
+    const regExpProducts = /^(\d+)-(.*)/;
+    const result = inputEntries.reduce((acc, cItem) => {
+      const match = cItem[0].match(regExpProducts);
+      const newName = match?.[2] ?? cItem[0];
+      const newProperty = { [newName]: cItem[1] };
+      const index = match ? parseInt(match[1]) - 1: null;
       return {
         ...acc,
-        [toReplace ? cItem[0].replace(toReplace, '') : cItem[0]]: cItem[1],
+        ...(!match && newProperty),
+        ...(match && {
+          products: acc.products.map((p, idx) => idx === index ? { ...p, ...newProperty } : { ...p }),
+        }),
       };
-    }, {}));
+    }, { products: Array(lengthProducts).fill({}) } as ResultSubmit);
+    console.info(result);
   };
 
   return (
@@ -101,7 +110,7 @@ function NewInvoicePage() {
 export default NewInvoicePage;
 
 function InvoiceProducts() {
-  const PRODUCT_INIT: Product = { amount: 0, unitValue: 0, description: '' };
+  const PRODUCT_INIT: Product = { amount: 0, unitValue: 0, description: '', totalValue: '' };
 
   const [products, setProducts] = useState<Product[]>([{ ...PRODUCT_INIT }]);
 
@@ -144,14 +153,15 @@ function InvoiceProduct(props: InvoiceProductProps) {
 
   const handleOnChange = ({ name, value }: { name: string; value: string; }) => {
     let newValue: string | number = value;
-    if (['amount', 'unitValue'].includes(name) && !!value) {
-      newValue = parseInt(value);
-      setTotalValue(name === 'amount' ? newValue * product.unitValue : newValue * product.amount);
-    }
+    if (['amount', 'unitValue'].includes(name) && !!value) newValue = parseInt(value);
     setP((ps) => ps.map(
       (item, index) => index === indexProduct - 1 ? ({ ...item, [name]: newValue }) : item
     ));
   }
+
+  useEffect(() => {
+    setTotalValue(product.unitValue * product.amount);
+  }, [product]);
 
   return (
     <VStack
@@ -215,7 +225,6 @@ function InvoiceProduct(props: InvoiceProductProps) {
       <FormControl>
         <FormLabel>Valor Total</FormLabel>
         <NumberInput
-          isDisabled
           isRequired
           name={`${indexProduct}-totalValue`}
           min={1}
@@ -250,4 +259,15 @@ interface Product {
   amount: number;
   unitValue: number;
   description: string;
+  totalValue: string;
+}
+
+interface ResultSubmit  {
+  invoiceNumber: string;
+  orderName: string;
+  wayToPay: string;
+  dateStart: string;
+  dateEnd: string;
+  products: Product[];
+  totalToWords: string;
 }
