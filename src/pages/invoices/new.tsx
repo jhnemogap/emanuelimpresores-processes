@@ -18,7 +18,7 @@ import {
 import { useEffect, useState } from 'react';
 import { MinusIcon, PlusSquareIcon } from '@chakra-ui/icons';
 
-import type { Dispatch, SetStateAction, SyntheticEvent } from 'react';
+import type { SyntheticEvent } from 'react';
 
 function NewInvoicePage() {
   const handleOnSubmit = (event: SyntheticEvent) => {
@@ -110,16 +110,23 @@ function NewInvoicePage() {
 export default NewInvoicePage;
 
 function InvoiceProducts() {
-  const PRODUCT_INIT: Product = { amount: 0, unitValue: 0, description: '', totalValue: '' };
+  const PRODUCT_INIT: Product = { amount: 0, unitValue: 0, totalValue: 0, description: '' };
 
   const [products, setProducts] = useState<Product[]>([{ ...PRODUCT_INIT }]);
 
-  const handleDeleteProduct = (index: number) => {
-    setProducts((ps) => ps.filter((_, idx) => idx !== index - 1));
-  }
-
   const handleAddProduct = () => {
     setProducts((ps) => [...ps, { ...PRODUCT_INIT }]);
+  }
+
+  const handleDeleteProduct = (indexProduct: IndexProduct) => {
+    setProducts((ps) => ps.filter((_, index) => index !== indexProduct - 1));
+  }
+
+  const handleOnChangeProduct = (params: { product: Product, indexProduct: number }) => {
+    const { indexProduct, product } = params;
+    setProducts((ps) => ps.map((item, index) =>
+      index === indexProduct - 1 ? { ...product } : item)
+    );
   }
 
   return (
@@ -133,10 +140,10 @@ function InvoiceProducts() {
       {products.map((product, index) => (
         <InvoiceProduct
           key={`p-${index + 1}`}
-          product={product}
-          setP={setProducts}
           indexProduct={index + 1}
-          onDelete={() => handleDeleteProduct(index + 1)}
+          product={{ ...product }}
+          onChange={handleOnChangeProduct}
+          onDelete={handleDeleteProduct}
         />
       ))}
         <Button variant='ghost' leftIcon={<PlusSquareIcon />} onClick={handleAddProduct}>
@@ -147,21 +154,17 @@ function InvoiceProducts() {
 }
 
 function InvoiceProduct(props: InvoiceProductProps) {
-  const { indexProduct = 1, onDelete = () => null, product, setP } = props;
+  const { indexProduct = 1, product, onChange, onDelete = () => null } = props;
 
-  const [totalValue , setTotalValue] = useState<number>(0);
-
-  const handleOnChange = ({ name, value }: { name: string; value: string; }) => {
-    let newValue: string | number = value;
-    if (['amount', 'unitValue'].includes(name) && !!value) newValue = parseInt(value);
-    setP((ps) => ps.map(
-      (item, index) => index === indexProduct - 1 ? ({ ...item, [name]: newValue }) : item
-    ));
+  const handleOnChange = ({ name, value }: { name: string; value: string | number; }) => {
+    onChange({ indexProduct, product: { ...product, [name]: !!value ? value : '' }});
   }
 
   useEffect(() => {
-    setTotalValue(product.unitValue * product.amount);
-  }, [product]);
+    const total = product.unitValue * product.amount;
+    handleOnChange({ name: 'totalValue', value: total });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.unitValue, product.amount]);
 
   return (
     <VStack
@@ -180,9 +183,9 @@ function InvoiceProduct(props: InvoiceProductProps) {
           size='xs'
           variant='solid'
           colorScheme='red'
-          onClick={onDelete}
           icon={<MinusIcon />}
           aria-label='delete product'
+          onClick={() => onDelete(indexProduct)}
         />
       </HStack>
 
@@ -193,8 +196,10 @@ function InvoiceProduct(props: InvoiceProductProps) {
           name={`${indexProduct}-amount`}
           min={1}
           max={99_999}
-          value={product.amount || ''}
-          onChange={(value) => handleOnChange({ name: 'amount', value })}
+          value={product.amount}
+          parse={(value) => parseNumberByThousands({ value })}
+          format={(value) => formatNumberByThousands({ value: value as number })}
+          onChange={(_, value) => handleOnChange({ name: 'amount', value })}
         >
           <NumberInputField />
           <NumberInputStepper>
@@ -211,8 +216,11 @@ function InvoiceProduct(props: InvoiceProductProps) {
           name={`${indexProduct}-unitValue`}
           min={1}
           max={9_999_999}
-          value={product.unitValue || ''}
-          onChange={(value) => handleOnChange({ name: 'unitValue', value })}
+          value={product.unitValue}
+          pattern={"\\$\\s[0-9]{1,3}(.[0-9]{3})*"}
+          parse={(value) => parseCurrencyValue({ value })}
+          format={(value) => formatCurrencyValue({ value: value as number })}
+          onChange={(_, value) => handleOnChange({ name: 'unitValue', value })}
         >
           <NumberInputField />
           <NumberInputStepper>
@@ -224,15 +232,11 @@ function InvoiceProduct(props: InvoiceProductProps) {
 
       <FormControl>
         <FormLabel>Valor Total</FormLabel>
-        <NumberInput
-          isRequired
+        <Input
+          readOnly
           name={`${indexProduct}-totalValue`}
-          min={1}
-          max={9_999_999}
-          value={totalValue || ''}
-        >
-          <NumberInputField />
-        </NumberInput>
+          value={formatCurrencyValue({ value: product.totalValue })}
+        />
       </FormControl>
 
       <FormControl>
@@ -248,18 +252,39 @@ function InvoiceProduct(props: InvoiceProductProps) {
   );
 }
 
+function formatNumberByThousands({ value }: { value: number }) {
+  const result = Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(value);
+  return !!value ? result : '';
+}
+
+function parseNumberByThousands({ value }: { value: string }) {
+  return value.replaceAll('.', '');
+}
+
+function formatCurrencyValue({ value }: { value: number }): string {
+  const result = Intl.NumberFormat(
+    'es-CO',
+    { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }
+  ).format(value);
+  return !!value ? result : '';
+}
+
+function parseCurrencyValue({ value }: { value: string }) {
+  return parseNumberByThousands({ value }).replaceAll(',00', '').slice(2);
+}
+
 interface InvoiceProductProps {
-  indexProduct: number;
-  onDelete?: () => void;
+  indexProduct: IndexProduct;
   product: Product;
-  setP: Dispatch<SetStateAction<Product[]>>;
+  onDelete?: (indexProduct: IndexProduct) => void;
+  onChange: (params: { indexProduct: IndexProduct, product: Product }) => void;
 }
 
 interface Product {
   amount: number;
   unitValue: number;
+  totalValue: number;
   description: string;
-  totalValue: string;
 }
 
 interface ResultSubmit  {
@@ -271,3 +296,5 @@ interface ResultSubmit  {
   products: Product[];
   totalToWords: string;
 }
+
+type IndexProduct = number;
