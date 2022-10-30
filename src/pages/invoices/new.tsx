@@ -1,4 +1,9 @@
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Box,
   Button,
   FormControl,
@@ -13,6 +18,7 @@ import {
   NumberInputField,
   NumberInputStepper, Text,
   Textarea,
+  useToast,
   VStack,
 } from '@chakra-ui/react';
 import { useCallback, useEffect, useState } from 'react';
@@ -114,12 +120,24 @@ function InvoiceProducts() {
 
   const [products, setProducts] = useState<Product[]>([{ ...PRODUCT_INIT }]);
 
+  const toast = useToast();
+
   const handleAddProduct = () => {
     setProducts((ps) => [...ps, { ...PRODUCT_INIT }]);
   }
 
   const handleDeleteProduct = (indexProduct: IndexProduct) => {
-    setProducts((ps) => ps.filter((_, index) => index !== indexProduct - 1));
+    if (products.length > 1) {
+      setProducts((ps) => ps.filter((_, index) => index !== indexProduct - 1));
+    } else {
+      toast({
+        status: 'warning',
+        isClosable: true,
+        title: 'No se puede eliminar este elemento',
+        description: 'Debe haber al menos un producto o servicio en la factura',
+        containerStyle: { marginBottom: '2rem' },
+      });
+    }
   }
 
   const handleOnChangeProduct = (params: { product: Product, indexProduct: number }) => {
@@ -141,15 +159,17 @@ function InvoiceProducts() {
       alignItems='stretch'
       bgColor='blue.500'
     >
-      {products.map((product, index) => (
-        <InvoiceProduct
-          key={`p-${index + 1}`}
-          indexProduct={index + 1}
-          product={{ ...product }}
-          onChange={handleOnChangeProduct}
-          onDelete={handleDeleteProduct}
-        />
-      ))}
+      <Accordion defaultIndex={[0]} allowMultiple>
+        {products.map((product, index) => (
+          <InvoiceProduct
+            key={`p-${index + 1}`}
+            indexProduct={index + 1}
+            product={{ ...product }}
+            onChange={handleOnChangeProduct}
+            onDelete={handleDeleteProduct}
+          />
+        ))}
+      </Accordion>
 
       <Button variant='ghost' leftIcon={<PlusSquareIcon />} onClick={handleAddProduct}>
         Agregar producto
@@ -176,88 +196,88 @@ function InvoiceProduct(props: InvoiceProductProps) {
   }, [product.unitValue, product.amount]);
 
   return (
-    <VStack
-      as='article'
-      p={2}
-      spacing={2}
-      alignItems='stretch'
-      bgColor='blue.700'
-      borderRadius='0.5rem'
-    >
-      <HStack as='header' justifyContent='space-between'>
-        <Heading as='h2' size='md'>
-          Elemento # {indexProduct}
-        </Heading>
-        <IconButton
-          size='xs'
-          variant='solid'
-          colorScheme='red'
-          icon={<MinusIcon />}
-          aria-label='delete product'
-          onClick={() => onDelete(indexProduct)}
-        />
-      </HStack>
+    <AccordionItem as='article' p={2} mt={3} border='none' borderRadius='0.5rem' bgColor='blue.700'>
+      <AccordionButton as='header' p={1} justifyContent='space-between'>
+        <Heading as='h2' size='md'># {indexProduct}</Heading>
+        <AccordionIcon />
+      </AccordionButton>
 
-      <FormControl>
-        <FormLabel>Cantidad</FormLabel>
-        <NumberInput
-          isRequired
-          name={`${indexProduct}-amount`}
-          min={1}
-          max={99_999}
-          value={product.amount}
-          parse={(value) => parseNumberByThousands({ value })}
-          format={(value) => formatNumberByThousands({ value: value as number })}
-          onChange={(_, value) => handleOnChange({ name: 'amount', value })}
-        >
-          <NumberInputField />
-          <NumberInputStepper>
-            <NumberIncrementStepper />
-            <NumberDecrementStepper />
-          </NumberInputStepper>
-        </NumberInput>
-      </FormControl>
+      <AccordionPanel p={0}>
+        <FormControl>
+          <FormLabel>Cantidad</FormLabel>
+          <NumberInput
+            isRequired
+            name={`${indexProduct}-amount`}
+            min={1}
+            max={99_999}
+            value={product.amount}
+            parse={(value) => parseNumberByThousands({ value })}
+            format={(value) => formatNumberByThousands({ value: value as number })}
+            onChange={(_, value) => handleOnChange({ name: 'amount', value })}
+          >
+            <NumberInputField />
+            <NumberInputStepper>
+              <NumberIncrementStepper />
+              <NumberDecrementStepper />
+            </NumberInputStepper>
+          </NumberInput>
+        </FormControl>
 
-      <FormControl>
-        <FormLabel>Valor Unitario</FormLabel>
-        <NumberInput
-          isRequired
-          name={`${indexProduct}-unitValue`}
-          min={1}
-          max={9_999_999}
-          value={product.unitValue}
-          pattern={"\\$\\s[0-9]{1,3}(.[0-9]{3})*"}
-          parse={(value) => parseCurrencyValue({ value })}
-          format={(value) => formatCurrencyValue({ value: value as number })}
-          onChange={(_, value) => handleOnChange({ name: 'unitValue', value })}
-        >
-          <NumberInputField />
-          <NumberInputStepper>
-            <NumberIncrementStepper />
-            <NumberDecrementStepper />
-          </NumberInputStepper>
-        </NumberInput>
-      </FormControl>
+        <FormControl>
+          <FormLabel>Valor Unitario</FormLabel>
+          <NumberInput
+            isRequired
+            name={`${indexProduct}-unitValue`}
+            min={1}
+            max={9_999_999}
+            value={product.unitValue}
+            pattern={'\\$\\s[0-9]{1,3}(.[0-9]{3})*'}
+            parse={(value) => parseCurrencyValue({ value })}
+            format={(value) => formatCurrencyValue({ value: value as number })}
+            onChange={(_, value) => handleOnChange({ name: 'unitValue', value })}
+          >
+            <NumberInputField />
+            <NumberInputStepper>
+              <NumberIncrementStepper />
+              <NumberDecrementStepper />
+            </NumberInputStepper>
+          </NumberInput>
+        </FormControl>
 
-      <FormControl>
-        <FormLabel>Valor Total</FormLabel>
-        <Input
-          readOnly
-          name={`${indexProduct}-totalValue`}
-          value={formatCurrencyValue({ value: product.totalValue })}
-        />
-      </FormControl>
+        <FormControl>
+          <FormLabel>Valor Total</FormLabel>
+          <Input
+            readOnly
+            name={`${indexProduct}-totalValue`}
+            value={formatCurrencyValue({ value: product.totalValue })}
+          />
+        </FormControl>
 
-      <FormControl>
-        <FormLabel>Descripción producto / servicio</FormLabel>
-        <Textarea
-          isRequired
-          name={`${indexProduct}-description`}
-          value={product.description}
-          onChange={(e) => handleOnChange({ name: 'description', value: e.currentTarget.value })}
-        />
-      </FormControl>
-    </VStack>
+        <FormControl>
+          <FormLabel>Descripción producto / servicio</FormLabel>
+          <Textarea
+            isRequired
+            name={`${indexProduct}-description`}
+            value={product.description}
+            onChange={(e) => handleOnChange({ name: 'description', value: e.currentTarget.value })}
+          />
+        </FormControl>
+
+        <HStack m={2} justifyContent='flex-end'>
+          <Text>
+            Eliminar este producto
+          </Text>
+          <IconButton
+            size='xs'
+            variant='solid'
+            colorScheme='red'
+            icon={<MinusIcon />}
+            aria-label='delete product'
+            onClick={() => onDelete(indexProduct)}
+          />
+        </HStack>
+      </AccordionPanel>
+    </AccordionItem>
   );
 }
 
