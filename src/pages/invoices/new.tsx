@@ -11,11 +11,11 @@ import {
   NumberIncrementStepper,
   NumberInput,
   NumberInputField,
-  NumberInputStepper,
+  NumberInputStepper, Text,
   Textarea,
   VStack,
 } from '@chakra-ui/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { MinusIcon, PlusSquareIcon } from '@chakra-ui/icons';
 
 import type { SyntheticEvent } from 'react';
@@ -129,6 +129,10 @@ function InvoiceProducts() {
     );
   }
 
+  const handleInvoiceTotalValue = useCallback(() => {
+    return formatCurrencyValue({ value: products.reduce((pv, p) => pv + p.totalValue, 0) });
+  }, [products]);
+
   return (
     <VStack
       as='section'
@@ -146,9 +150,14 @@ function InvoiceProducts() {
           onDelete={handleDeleteProduct}
         />
       ))}
-        <Button variant='ghost' leftIcon={<PlusSquareIcon />} onClick={handleAddProduct}>
-          Agregar producto
-        </Button>
+
+      <Button variant='ghost' leftIcon={<PlusSquareIcon />} onClick={handleAddProduct}>
+        Agregar producto
+      </Button>
+
+      <Text align='center' as='mark'>
+        {`Valor total factura: ${handleInvoiceTotalValue()}`}
+      </Text>
     </VStack>
   );
 }
