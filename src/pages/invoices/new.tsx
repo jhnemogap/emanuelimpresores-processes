@@ -21,7 +21,7 @@ import {
   useToast,
   VStack,
 } from '@chakra-ui/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MinusIcon, PlusSquareIcon } from '@chakra-ui/icons';
 
 import type { SyntheticEvent } from 'react';
@@ -31,7 +31,7 @@ function NewInvoicePage() {
     event.preventDefault();
     const formData = new FormData(event.target as HTMLFormElement);
     const inputEntries = [...formData.entries()];
-    const NUMBER_ROOT_INPUTS = 7;
+    const NUMBER_ROOT_INPUTS = 8;
     const lengthProducts = (inputEntries.length - NUMBER_ROOT_INPUTS) / 4;
     const regExpProducts = /^(\d+)-(.*)/;
     const result = inputEntries.reduce((acc, cItem) => {
@@ -118,6 +118,7 @@ export default NewInvoicePage;
 function InvoiceProducts() {
   const PRODUCT_INIT: Product = { amount: 0, unitValue: 0, totalValue: 0, description: '' };
 
+  const [totalV, setTotalV] = useState('');
   const [products, setProducts] = useState<Product[]>([{ ...PRODUCT_INIT }]);
 
   const toast = useToast();
@@ -147,8 +148,10 @@ function InvoiceProducts() {
     );
   }
 
-  const handleInvoiceTotalValue = useCallback(() => {
-    return formatCurrencyValue({ value: products.reduce((pv, p) => pv + p.totalValue, 0) });
+  useEffect(() => {
+    setTotalV(
+      formatCurrencyValue({ value: products.reduce((pv, p) => pv + p.totalValue, 0) })
+    );
   }, [products]);
 
   return (
@@ -176,8 +179,16 @@ function InvoiceProducts() {
       </Button>
 
       <Text align='center' as='mark'>
-        {`Valor total factura: ${handleInvoiceTotalValue()}`}
+        {`Valor total factura: ${totalV}`}
       </Text>
+
+      <Input
+        isReadOnly
+        type='text'
+        hidden={true}
+        value={totalV}
+        name='invoiceTotalValue'
+      />
     </VStack>
   );
 }
@@ -324,6 +335,7 @@ interface ResultSubmit  {
   dateEnd: string;
   products: Product[];
   totalToWords: string;
+  invoiceTotalValue: string;
 }
 
 type IndexProduct = number;
