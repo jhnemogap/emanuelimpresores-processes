@@ -25,6 +25,7 @@ import { useEffect, useState } from 'react';
 import { MinusIcon, PlusSquareIcon } from '@chakra-ui/icons';
 
 import type { SyntheticEvent } from 'react';
+import { generatePDF } from '../../pdf/makePdf';
 
 function NewInvoicePage() {
   const handleOnSubmit = (event: SyntheticEvent) => {
@@ -48,6 +49,7 @@ function NewInvoicePage() {
       };
     }, { products: Array(lengthProducts).fill({}) } as ResultSubmit);
     console.info(result);
+    generatePDF();
   };
 
   return (
