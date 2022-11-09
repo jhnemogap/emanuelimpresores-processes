@@ -6,6 +6,12 @@ import {
   AccordionPanel,
   Box,
   Button,
+  Drawer,
+  DrawerBody,
+  DrawerCloseButton,
+  DrawerContent,
+  DrawerHeader,
+  DrawerOverlay,
   FormControl,
   FormLabel,
   Heading,
@@ -17,9 +23,9 @@ import {
   NumberInput,
   NumberInputField,
   NumberInputStepper,
-  Stack,
   Text,
   Textarea,
+  useDisclosure,
   useToast,
   VStack,
 } from '@chakra-ui/react';
@@ -28,13 +34,16 @@ import { MinusIcon, PlusSquareIcon } from '@chakra-ui/icons';
 
 import { generatePDF } from '../../pdf/makePdf';
 
-import type { SyntheticEvent } from 'react';
+import type { BaseSyntheticEvent } from 'react';
 
 const PREVIEW_PDF_ID = 'preview-pdf';
 
 function NewInvoicePage() {
   const [src, setSrc] = useState<unknown>('');
-  const handleOnSubmit = (event: SyntheticEvent) => {
+
+  const { isOpen, onOpen, onClose } = useDisclosure()
+
+  const handleOnSubmit = (event: BaseSyntheticEvent<SubmitEvent>) => {
     event.preventDefault();
     const formData = new FormData(event.target as HTMLFormElement);
     const inputEntries = [...formData.entries()];
@@ -59,20 +68,18 @@ function NewInvoicePage() {
       },
       { products: Array(lengthProducts).fill({}) } as ResultSubmit,
     );
-    // console.info(result);
-    const isPreview = event.nativeEvent?.submitter?.name === PREVIEW_PDF_ID;
+    console.info(result);
+    const isPreview = event.nativeEvent.submitter?.id === `btn-${PREVIEW_PDF_ID}`;
     const genPdf = generatePDF({ isPreview, data: result  });
-    if (genPdf.isPreview) setSrc(genPdf.urlPDF);
+    if (isPreview) {
+      setSrc(genPdf);
+      onOpen();
+    }
   };
 
   return (
-    <Stack
-      as='main'
-      spacing={8}
-      justifyContent='space-center'
-      direction={{ base: 'column', xl: 'row' }}
-    >
-      <Box as='section' width='100%' maxWidth={src ? '32rem' : '100%'}>
+    <VStack as='main' alignItems='center'>
+      <Box as='section' width='100%' maxWidth='45rem'>
         <Heading as='h1' size='xl' mb={6}>
           Crea una nueva factura
         </Heading>
@@ -122,27 +129,40 @@ function NewInvoicePage() {
           </FormControl>
 
           <HStack justifyContent='space-evenly' spacing={2}>
-            <Button name='preview-pdf' type='submit' variant='outline' colorScheme='twitter'>
+            <Button
+              id={`btn-${PREVIEW_PDF_ID}`}
+              type='submit'
+              variant='outline'
+              colorScheme='twitter'
+            >
               Vista Previa
             </Button>
-            <Button name='save-pdf' type='submit' variant='solid' colorScheme='linkedin'>
+            <Button id='btn-save-pdf' type='submit' variant='solid' colorScheme='linkedin'>
               Generar Factura
             </Button>
           </HStack>
         </VStack>
       </Box>
 
-      {Boolean(src) && (
-        <Box
-          id={PREVIEW_PDF_ID}
-          as='iframe'
-          width={'100%'}
-          minHeight={'45rem'}
-          mt={8}
-          src={src as string}
-        />
-      )}
-    </Stack>
+      <Drawer isOpen={isOpen} onClose={onClose} placement='right' size='xl'>
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader borderBottomWidth='1px'>
+            Vista previa de la FACTURA
+          </DrawerHeader>
+          <DrawerBody>
+            <Box
+              as='iframe'
+              id={PREVIEW_PDF_ID}
+              src={src as string}
+              width='100%'
+              height='100%'
+            />
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+    </VStack>
   );
 }
 

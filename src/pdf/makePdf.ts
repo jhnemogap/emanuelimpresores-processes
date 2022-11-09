@@ -15,10 +15,7 @@ export function generatePDF(props: generatePDFProps) {
   // +++ header +++
   drawInvoiceNumber({ doc, value: data.invoiceNumber });
   // +++ save or preview PDF +++
-  return {
-    isPreview,
-    urlPDF: isPreview ? doc.output('bloburl') : doc.save('my-pdf-test'),
-  }
+  return isPreview ? doc.output('bloburl') : doc.save('my-pdf-test');
 }
 
 function drawInvoiceNumber(props: DrawerFnValueString) {
