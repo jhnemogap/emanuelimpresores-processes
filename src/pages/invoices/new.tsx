@@ -108,7 +108,7 @@ function NewInvoicePage() {
 
           <FormControl>
             <FormLabel>Señores</FormLabel>
-            <Textarea isRequired name='forWhom' />
+            <Textarea isRequired name='forWhom' rows={3} cols={29} maxLength={29*3} />
           </FormControl>
 
           <FormControl>
@@ -380,6 +380,7 @@ export interface ResultSubmit {
   invoiceNumber: InvoiceNumber;
   orderName: string;
   wayToPay: string;
+  forWhom: string;
   dateStart: string;
   dateEnd: string;
   products: ProductToSubmit[];
