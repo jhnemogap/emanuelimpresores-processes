@@ -98,7 +98,7 @@ function NewInvoicePage() {
 
           <FormControl>
             <FormLabel>ORDEN DE COMPRA No.</FormLabel>
-            <Input name='orderName' type='text' />
+            <Input name='purchaseOrder' type='text' />
           </FormControl>
 
           <FormControl>
@@ -378,7 +378,7 @@ export type InvoiceNumber = string;
 
 export interface ResultSubmit {
   invoiceNumber: InvoiceNumber;
-  orderName: string;
+  purchaseOrder: string;
   wayToPay: string;
   forWhom: string;
   dateStart: string;

@@ -4,7 +4,7 @@ import { pxToCm, pxToPt } from '../utils/lengthUnits.util';
 
 import type { ResultSubmit } from 'pages/invoices/new';
 
-const DRAW_ALL_RECTS = true;
+const DRAW_ALL_RECTS = false;
 const COLOR_RED = '#f00';
 const COLOR_BLACK = '#000';
 const NORMAL_FONT_SIZE_IN_PX = 16; // 1.0rem -> 16px
@@ -16,11 +16,18 @@ export function generatePDF(props: generatePDFProps) {
   const doc = new jsPDF({ unit: 'cm', format: [19.9, 22.0] });
   // +++ app +++
   doc.setLineWidth(0.01);
-  setBaseFontToFill({ doc });
   if (DRAW_ALL_RECTS) drawAllRects({ doc });
   // +++ header +++
+  setBaseFontToFill({ doc });
   drawInvoiceNumber({ doc, value: data.invoiceNumber });
+  setBaseFontToFill({ doc, fontWeight: 'bold' });
   drawForWhom({ doc, value: data.forWhom });
+  setBaseFontToFill({ doc, size: 'small', fontWeight: 'bold' });
+  drawDateStart({ doc, value: data.dateStart });
+  drawDateEnd({ doc, value: data.dateEnd });
+  drawPurchaseOrder({ doc, value: data.purchaseOrder });
+  drawWayToPay({ doc, value: data.wayToPay });
+  setBaseFontToFill({ doc });
   // +++ save or preview PDF +++
   return isPreview ? doc.output('bloburl') : doc.save('my-pdf-test');
 }
@@ -30,6 +37,9 @@ function drawAllRects({ doc }: BaseDrawerFn) {
   doc.rect(14.9, 1.4, 4.0, 1.0);
   doc.rect(0.7, 2.7, 10.5, 1.9);
   doc.rect(3.0, 3.0, 7.5, 1.4);
+  doc.rect(11.5, 2.7, 7.7, 1.9);
+  doc.rect(15.3, 2.7, 3.9, 0.65);
+  doc.rect(11.5, 3.35, 7.7, 0.6);
 }
 
 function drawInvoiceNumber(props: DrawerFnValueString) {
@@ -42,7 +52,6 @@ function drawInvoiceNumber(props: DrawerFnValueString) {
   doc.setFontSize(pxToPt(fontSizeInPX));
   doc.setTextColor(COLOR_RED);
   doc.text(value, x - shiftLeft, y);
-  setBaseFontToFill({ doc });
 }
 
 function drawForWhom(props: DrawerFnValueString) {
@@ -51,6 +60,34 @@ function drawForWhom(props: DrawerFnValueString) {
   const characterWidth = pxToCm(GLOBAL_FONT_SIZE_IN_PX);
   const shiftTop = characterWidth / 2;
   doc.text(value, x, y + shiftTop);
+}
+
+function drawDateStart(props: DrawerFnValueString) {
+  const { doc, value } = props;
+  const [x, y] = [12.5, 3.05];
+  const characterWidth = pxToCm(GLOBAL_FONT_SIZE_IN_PX);
+  const shiftTop = characterWidth / 2;
+  doc.text(value, x, y + shiftTop);
+}
+
+function drawDateEnd(props: DrawerFnValueString) {
+  const { doc, value } = props;
+  const [x, y] = [16.0, 3.05];
+  const characterWidth = pxToCm(GLOBAL_FONT_SIZE_IN_PX);
+  const shiftTop = characterWidth / 2;
+  doc.text(value, x, y + shiftTop);
+}
+
+function drawPurchaseOrder(props: DrawerFnValueString) {
+  const { doc, value } = props;
+  const [x, y] = [14.3, 3.75];
+  doc.text(value, x, y);
+}
+
+function drawWayToPay(props: DrawerFnValueString) {
+  const { doc, value } = props;
+  const [x, y] = [14.0, 4.35];
+  doc.text(value, x, y);
 }
 
 function setBaseFontToFill(params: SetBaseFontToFillParams) {
