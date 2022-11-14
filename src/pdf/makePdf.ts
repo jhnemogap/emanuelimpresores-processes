@@ -2,9 +2,9 @@ import { jsPDF } from 'jspdf';
 
 import { pxToCm, pxToPt } from '../utils/lengthUnits.util';
 
-import type { ResultSubmit } from 'pages/invoices/new';
+import type { ProductToSubmit, ResultSubmit } from 'pages/invoices/new';
 
-const DRAW_ALL_RECTS = false;
+const DRAW_ALL_RECTS = true;
 const COLOR_RED = '#f00';
 const COLOR_BLACK = '#000';
 const NORMAL_FONT_SIZE_IN_PX = 16; // 1.0rem -> 16px
@@ -28,7 +28,7 @@ export function generatePDF(props: generatePDFProps) {
   drawPurchaseOrder({ doc, value: data.purchaseOrder });
   drawWayToPay({ doc, value: data.wayToPay });
   // +++ products +++
-
+  drawProducts({ doc, products: data.products });
   // +++ footer +++
   setBaseFontToFill({ doc });
   drawTotalToWord({ doc, value: data.totalToWords });
@@ -41,12 +41,19 @@ export function generatePDF(props: generatePDFProps) {
 
 function drawAllRects({ doc }: BaseDrawerFn) {
   doc.rect(0.7, 1.1, 18.5, 19.9);
+  // +++ header +++
   doc.rect(14.9, 1.4, 4.0, 1.0);
   doc.rect(0.7, 2.7, 10.5, 1.9);
   doc.rect(3.0, 3.0, 7.5, 1.4);
   doc.rect(11.5, 2.7, 7.7, 1.9);
   doc.rect(15.3, 2.7, 3.9, 0.65);
   doc.rect(11.5, 3.35, 7.7, 0.6);
+  // +++ products +++
+  doc.rect(0.7, 5.3, 1.4, 11.8);
+  doc.rect(2.1, 5.3, 12.3, 11.8);
+  doc.rect(14.4, 5.3, 1.95, 11.8);
+  doc.rect(16.35, 5.3, 2.85, 11.8);
+  // +++ footer +++
   doc.rect(0.7, 17.2, 13.5, 1.1);
   doc.rect(16.4, 17.2, 2.8, 1.0);
   doc.rect(16.4, 18.2, 2.8, 1.1);
@@ -69,7 +76,7 @@ function drawForWhom(props: DrawerFnValueString) {
   const [x, y] = [3.0, 3.1];
   const characterWidth = pxToCm(GLOBAL_FONT_SIZE_IN_PX);
   const shiftTop = characterWidth / 2;
-  doc.text(value, x, y + shiftTop);
+  doc.text(value, x, y + shiftTop, { maxWidth: 20 });
 }
 
 function drawDateStart(props: DrawerFnValueString) {
@@ -110,14 +117,33 @@ function drawTotalToWord(props: DrawerFnValueString) {
 
 function drawSubtotal(props: DrawerFnValueString) {
   const { doc, value } = props;
-  const [x, y] = [16.5, 17.8];
-  doc.text(value, x, y);
+  const [x, y] = [19.1, 17.8];
+  doc.text(value, x, y, { align: 'right' });
 }
 
 function drawTotal(props: DrawerFnValueString) {
   const { doc, value } = props;
-  const [x, y] = [16.5, 18.85];
-  doc.text(value, x, y);
+  const [x, y] = [19.1, 18.85];
+  doc.text(value, x, y, { align: 'right' });
+}
+
+function drawProducts(props: DrawerFnProducts) {
+  const { doc, products } = props;
+  const [xAmount, xDesc, xSubV, xTotalV] = [2.0, 2.3, 16.3, 19.1];
+  let [x, y] = [0, 6.0];
+  products.forEach((p) => {
+    setBaseFontToFill({ doc });
+    x = xAmount;
+    doc.text(p.amount, x, y, { align: 'right' });
+    x = xDesc;
+    doc.text(p.description, x, y, { align: 'left' });
+    setBaseFontToFill({ doc, size: 'small' });
+    y += pxToCm(GLOBAL_FONT_SIZE_IN_PX) * [...p.description.matchAll(/\r\n/g)].length;
+    x = xSubV;
+    doc.text(p.unitValue, x, y, { align: 'right' });
+    x = xTotalV;
+    doc.text(p.totalValue, x, y, { align: 'right' });
+  });
 }
 
 function setBaseFontToFill(params: SetBaseFontToFillParams) {
@@ -143,6 +169,10 @@ interface BaseDrawerFn {
 
 interface DrawerFnValueString extends BaseDrawerFn {
   value: string;
+}
+
+interface DrawerFnProducts extends BaseDrawerFn {
+  products: ProductToSubmit[];
 }
 
 interface SetBaseFontToFillParams {
