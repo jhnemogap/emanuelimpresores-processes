@@ -6,6 +6,12 @@ import {
   AccordionPanel,
   Box,
   Button,
+  Drawer,
+  DrawerBody,
+  DrawerCloseButton,
+  DrawerContent,
+  DrawerHeader,
+  DrawerOverlay,
   FormControl,
   FormLabel,
   Heading,
@@ -16,100 +22,147 @@ import {
   NumberIncrementStepper,
   NumberInput,
   NumberInputField,
-  NumberInputStepper, Text,
+  NumberInputStepper,
+  Text,
   Textarea,
+  useDisclosure,
   useToast,
   VStack,
 } from '@chakra-ui/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MinusIcon, PlusSquareIcon } from '@chakra-ui/icons';
 
-import type { SyntheticEvent } from 'react';
+import { generatePDF } from '../../pdf/makePdf';
+
+import type { BaseSyntheticEvent } from 'react';
+
+const PREVIEW_PDF_ID = 'preview-pdf';
 
 function NewInvoicePage() {
-  const handleOnSubmit = (event: SyntheticEvent) => {
+  const [src, setSrc] = useState<unknown>('');
+
+  const { isOpen, onOpen, onClose } = useDisclosure()
+
+  const handleOnSubmit = (event: BaseSyntheticEvent<SubmitEvent>) => {
     event.preventDefault();
     const formData = new FormData(event.target as HTMLFormElement);
     const inputEntries = [...formData.entries()];
-    const NUMBER_ROOT_INPUTS = 7;
+    const NUMBER_ROOT_INPUTS = 8;
     const lengthProducts = (inputEntries.length - NUMBER_ROOT_INPUTS) / 4;
     const regExpProducts = /^(\d+)-(.*)/;
-    const result = inputEntries.reduce((acc, cItem) => {
-      const match = cItem[0].match(regExpProducts);
-      const newName = match?.[2] ?? cItem[0];
-      const newProperty = { [newName]: cItem[1] };
-      const index = match ? parseInt(match[1]) - 1: null;
-      return {
-        ...acc,
-        ...(!match && newProperty),
-        ...(match && {
-          products: acc.products.map((p, idx) => idx === index ? { ...p, ...newProperty } : { ...p }),
-        }),
-      };
-    }, { products: Array(lengthProducts).fill({}) } as ResultSubmit);
+    const result = inputEntries.reduce(
+      (acc, cItem) => {
+        const match = cItem[0].match(regExpProducts);
+        const newName = match?.[2] ?? cItem[0];
+        const newProperty = { [newName]: cItem[1] };
+        const index = match ? parseInt(match[1]) - 1 : null;
+        return {
+          ...acc,
+          ...(!match && newProperty),
+          ...(match && {
+            products: acc.products.map((p, idx) =>
+              idx === index ? { ...p, ...newProperty } : { ...p },
+            ),
+          }),
+        };
+      },
+      { products: Array(lengthProducts).fill({}) } as ResultSubmit,
+    );
     console.info(result);
+    const isPreview = event.nativeEvent.submitter?.id === `btn-${PREVIEW_PDF_ID}`;
+    const genPdf = generatePDF({ isPreview, data: result  });
+    if (isPreview) {
+      setSrc(genPdf);
+      onOpen();
+    }
   };
 
   return (
-    <Box as='main'>
-      <Heading as='h1' size='xl' mb={6}>
-        Crea una nueva factura
-      </Heading>
+    <VStack as='main' alignItems='center'>
+      <Box as='section' width='100%' maxWidth='45rem'>
+        <Heading as='h1' size='xl' mb={6}>
+          Crea una nueva factura
+        </Heading>
 
-      <VStack as='form' spacing={4} alignItems='stretch' onSubmit={handleOnSubmit}>
-        <FormControl>
-          <FormLabel>FACTURA DE VENTA No.</FormLabel>
-          <NumberInput
-            isRequired
-            name='invoiceNumber'
-            min={1}
-            max={9_999}
-          >
-            <NumberInputField />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
-          </NumberInput>
-        </FormControl>
+        <VStack as='form' spacing={4} alignItems='stretch' onSubmit={handleOnSubmit}>
+          <FormControl>
+            <FormLabel>FACTURA DE VENTA No.</FormLabel>
+            <NumberInput isRequired name='invoiceNumber' min={1} max={9_999}>
+              <NumberInputField />
+              <NumberInputStepper>
+                <NumberIncrementStepper />
+                <NumberDecrementStepper />
+              </NumberInputStepper>
+            </NumberInput>
+          </FormControl>
 
-        <FormControl>
-          <FormLabel>ORDEN DE COMPRA No.</FormLabel>
-          <Input name='orderName' type='text' />
-        </FormControl>
+          <FormControl>
+            <FormLabel>ORDEN DE COMPRA No.</FormLabel>
+            <Input name='purchaseOrder' type='text' />
+          </FormControl>
 
-        <FormControl>
-          <FormLabel>FORMA DE PAGO</FormLabel>
-          <Input name='wayToPay' type='text' />
-        </FormControl>
+          <FormControl>
+            <FormLabel>FORMA DE PAGO</FormLabel>
+            <Input name='wayToPay' type='text' />
+          </FormControl>
 
-        <FormControl>
-          <FormLabel>Señores</FormLabel>
-          <Textarea isRequired name='forWhom' />
-        </FormControl>
+          <FormControl>
+            <FormLabel>Señores</FormLabel>
+            <Textarea isRequired name='forWhom' rows={3} cols={29} maxLength={29*3} />
+          </FormControl>
 
-        <FormControl>
-          <FormLabel>FECHA</FormLabel>
-          <Input name='dateStart' type='date' />
-        </FormControl>
+          <FormControl>
+            <FormLabel>FECHA</FormLabel>
+            <Input name='dateStart' type='date' />
+          </FormControl>
 
-        <FormControl>
-          <FormLabel>FECHA DE VENCIMIENTO</FormLabel>
-          <Input name='dateEnd' type='date' />
-        </FormControl>
+          <FormControl>
+            <FormLabel>FECHA DE VENCIMIENTO</FormLabel>
+            <Input name='dateEnd' type='date' />
+          </FormControl>
 
-        <InvoiceProducts />
+          <InvoiceProducts />
 
-        <FormControl>
-          <FormLabel>SON:</FormLabel>
-          <Textarea isRequired name='totalToWords' placeholder='Precio total en palabras'/>
-        </FormControl>
+          <FormControl>
+            <FormLabel>SON:</FormLabel>
+            <Textarea isRequired name='totalToWords' placeholder='Precio total en palabras' />
+          </FormControl>
 
-        <Button variant='ghost' type='submit'>
-          Generar Factura
-        </Button>
-      </VStack>
-    </Box>
+          <HStack justifyContent='space-evenly' spacing={2}>
+            <Button
+              id={`btn-${PREVIEW_PDF_ID}`}
+              type='submit'
+              variant='outline'
+              colorScheme='twitter'
+            >
+              Vista Previa
+            </Button>
+            <Button id='btn-save-pdf' type='submit' variant='solid' colorScheme='linkedin'>
+              Generar Factura
+            </Button>
+          </HStack>
+        </VStack>
+      </Box>
+
+      <Drawer isOpen={isOpen} onClose={onClose} placement='right' size='xl'>
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader borderBottomWidth='1px'>
+            Vista previa de la FACTURA
+          </DrawerHeader>
+          <DrawerBody>
+            <Box
+              as='iframe'
+              id={PREVIEW_PDF_ID}
+              src={src as string}
+              width='100%'
+              height='100%'
+            />
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+    </VStack>
   );
 }
 
@@ -118,13 +171,14 @@ export default NewInvoicePage;
 function InvoiceProducts() {
   const PRODUCT_INIT: Product = { amount: 0, unitValue: 0, totalValue: 0, description: '' };
 
+  const [totalV, setTotalV] = useState('');
   const [products, setProducts] = useState<Product[]>([{ ...PRODUCT_INIT }]);
 
   const toast = useToast();
 
   const handleAddProduct = () => {
     setProducts((ps) => [...ps, { ...PRODUCT_INIT }]);
-  }
+  };
 
   const handleDeleteProduct = (indexProduct: IndexProduct) => {
     if (products.length > 1) {
@@ -138,27 +192,21 @@ function InvoiceProducts() {
         containerStyle: { marginBottom: '2rem' },
       });
     }
-  }
+  };
 
-  const handleOnChangeProduct = (params: { product: Product, indexProduct: number }) => {
+  const handleOnChangeProduct = (params: { product: Product; indexProduct: number }) => {
     const { indexProduct, product } = params;
-    setProducts((ps) => ps.map((item, index) =>
-      index === indexProduct - 1 ? { ...product } : item)
+    setProducts((ps) =>
+      ps.map((item, index) => (index === indexProduct - 1 ? { ...product } : item)),
     );
-  }
+  };
 
-  const handleInvoiceTotalValue = useCallback(() => {
-    return formatCurrencyValue({ value: products.reduce((pv, p) => pv + p.totalValue, 0) });
+  useEffect(() => {
+    setTotalV(formatCurrencyValue({ value: products.reduce((pv, p) => pv + p.totalValue, 0) }));
   }, [products]);
 
   return (
-    <VStack
-      as='section'
-      p={2}
-      spacing={4}
-      alignItems='stretch'
-      bgColor='blue.500'
-    >
+    <VStack as='section' p={2} spacing={4} alignItems='stretch' bgColor='blue.500'>
       <Accordion defaultIndex={[0]} allowMultiple>
         {products.map((product, index) => (
           <InvoiceProduct
@@ -176,8 +224,10 @@ function InvoiceProducts() {
       </Button>
 
       <Text align='center' as='mark'>
-        {`Valor total factura: ${handleInvoiceTotalValue()}`}
+        {`Valor total factura: ${totalV}`}
       </Text>
+
+      <Input isReadOnly type='text' hidden={true} value={totalV} name='invoiceTotalValue' />
     </VStack>
   );
 }
@@ -185,9 +235,9 @@ function InvoiceProducts() {
 function InvoiceProduct(props: InvoiceProductProps) {
   const { indexProduct = 1, product, onChange, onDelete = () => null } = props;
 
-  const handleOnChange = ({ name, value }: { name: string; value: string | number; }) => {
-    onChange({ indexProduct, product: { ...product, [name]: !!value ? value : '' }});
-  }
+  const handleOnChange = ({ name, value }: { name: string; value: string | number }) => {
+    onChange({ indexProduct, product: { ...product, [name]: !!value ? value : '' } });
+  };
 
   useEffect(() => {
     const total = product.unitValue * product.amount;
@@ -198,7 +248,9 @@ function InvoiceProduct(props: InvoiceProductProps) {
   return (
     <AccordionItem as='article' p={2} mt={3} border='none' borderRadius='0.5rem' bgColor='blue.700'>
       <AccordionButton as='header' p={1} justifyContent='space-between'>
-        <Heading as='h2' size='md'># {indexProduct}</Heading>
+        <Heading as='h2' size='md'>
+          # {indexProduct}
+        </Heading>
         <AccordionIcon />
       </AccordionButton>
 
@@ -264,9 +316,7 @@ function InvoiceProduct(props: InvoiceProductProps) {
         </FormControl>
 
         <HStack m={2} justifyContent='flex-end'>
-          <Text>
-            Eliminar este producto
-          </Text>
+          <Text>Eliminar este producto</Text>
           <IconButton
             size='xs'
             variant='solid'
@@ -291,10 +341,11 @@ function parseNumberByThousands({ value }: { value: string }) {
 }
 
 function formatCurrencyValue({ value }: { value: number }): string {
-  const result = Intl.NumberFormat(
-    'es-CO',
-    { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }
-  ).format(value);
+  const result = Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(value);
   return !!value ? result : '';
 }
 
@@ -306,7 +357,7 @@ interface InvoiceProductProps {
   indexProduct: IndexProduct;
   product: Product;
   onDelete?: (indexProduct: IndexProduct) => void;
-  onChange: (params: { indexProduct: IndexProduct, product: Product }) => void;
+  onChange: (params: { indexProduct: IndexProduct; product: Product }) => void;
 }
 
 interface Product {
@@ -316,14 +367,25 @@ interface Product {
   description: string;
 }
 
-interface ResultSubmit  {
-  invoiceNumber: string;
-  orderName: string;
+export interface ProductToSubmit {
+  amount: string;
+  unitValue: string;
+  totalValue: string;
+  description: string;
+}
+
+export type InvoiceNumber = string;
+
+export interface ResultSubmit {
+  invoiceNumber: InvoiceNumber;
+  purchaseOrder: string;
   wayToPay: string;
+  forWhom: string;
   dateStart: string;
   dateEnd: string;
-  products: Product[];
+  products: ProductToSubmit[];
   totalToWords: string;
+  invoiceTotalValue: string;
 }
 
 type IndexProduct = number;
