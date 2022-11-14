@@ -27,7 +27,14 @@ export function generatePDF(props: generatePDFProps) {
   drawDateEnd({ doc, value: data.dateEnd });
   drawPurchaseOrder({ doc, value: data.purchaseOrder });
   drawWayToPay({ doc, value: data.wayToPay });
+  // +++ products +++
+
+  // +++ footer +++
   setBaseFontToFill({ doc });
+  drawTotalToWord({ doc, value: data.totalToWords });
+  setBaseFontToFill({ doc, size: 'small' });
+  drawSubtotal({ doc, value: data.invoiceTotalValue });
+  drawTotal({ doc, value: data.invoiceTotalValue });
   // +++ save or preview PDF +++
   return isPreview ? doc.output('bloburl') : doc.save('my-pdf-test');
 }
@@ -40,6 +47,9 @@ function drawAllRects({ doc }: BaseDrawerFn) {
   doc.rect(11.5, 2.7, 7.7, 1.9);
   doc.rect(15.3, 2.7, 3.9, 0.65);
   doc.rect(11.5, 3.35, 7.7, 0.6);
+  doc.rect(0.7, 17.2, 13.5, 1.1);
+  doc.rect(16.4, 17.2, 2.8, 1.0);
+  doc.rect(16.4, 18.2, 2.8, 1.1);
 }
 
 function drawInvoiceNumber(props: DrawerFnValueString) {
@@ -87,6 +97,26 @@ function drawPurchaseOrder(props: DrawerFnValueString) {
 function drawWayToPay(props: DrawerFnValueString) {
   const { doc, value } = props;
   const [x, y] = [14.0, 4.35];
+  doc.text(value, x, y);
+}
+
+function drawTotalToWord(props: DrawerFnValueString) {
+  const { doc, value } = props;
+  const [x, y] = [2, 17.4];
+  const characterWidth = pxToCm(GLOBAL_FONT_SIZE_IN_PX);
+  const shiftTop = characterWidth / 2;
+  doc.text(value, x, y + shiftTop);
+}
+
+function drawSubtotal(props: DrawerFnValueString) {
+  const { doc, value } = props;
+  const [x, y] = [16.5, 17.8];
+  doc.text(value, x, y);
+}
+
+function drawTotal(props: DrawerFnValueString) {
+  const { doc, value } = props;
+  const [x, y] = [16.5, 18.85];
   doc.text(value, x, y);
 }
 
