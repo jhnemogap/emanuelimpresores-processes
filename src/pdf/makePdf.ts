@@ -107,6 +107,28 @@ function drawWayToPay(props: DrawerFnValueString) {
   doc.text(value, x, y);
 }
 
+function drawProducts(props: DrawerFnProducts) {
+  const { doc, products } = props;
+  setBaseFontToFill({ doc });
+  const [xAmount, xDesc, xSubV, xTotalV] = [2.0, 2.3, 16.3, 19.1];
+  const Y_SPACE = doc.getLineHeightFactor() * pxToCm(GLOBAL_FONT_SIZE_IN_PX);
+  let [x, y] = [0, 6.0];
+  products.forEach((p) => {
+    setBaseFontToFill({ doc });
+    x = xAmount;
+    doc.text(p.amount, x, y, { align: 'right' });
+    x = xDesc;
+    doc.text(p.description, x, y, { align: 'left' });
+    y += Y_SPACE * [...p.description.matchAll(/\r\n/g)].length;
+    setBaseFontToFill({ doc, size: 'small' });
+    x = xSubV;
+    doc.text(p.unitValue, x, y, { align: 'right' });
+    x = xTotalV;
+    doc.text(p.totalValue, x, y, { align: 'right' });
+    y += Y_SPACE * 1.5;
+  });
+}
+
 function drawTotalToWord(props: DrawerFnValueString) {
   const { doc, value } = props;
   const [x, y] = [2, 17.4];
@@ -125,25 +147,6 @@ function drawTotal(props: DrawerFnValueString) {
   const { doc, value } = props;
   const [x, y] = [19.1, 18.85];
   doc.text(value, x, y, { align: 'right' });
-}
-
-function drawProducts(props: DrawerFnProducts) {
-  const { doc, products } = props;
-  const [xAmount, xDesc, xSubV, xTotalV] = [2.0, 2.3, 16.3, 19.1];
-  let [x, y] = [0, 6.0];
-  products.forEach((p) => {
-    setBaseFontToFill({ doc });
-    x = xAmount;
-    doc.text(p.amount, x, y, { align: 'right' });
-    x = xDesc;
-    doc.text(p.description, x, y, { align: 'left' });
-    setBaseFontToFill({ doc, size: 'small' });
-    y += pxToCm(GLOBAL_FONT_SIZE_IN_PX) * [...p.description.matchAll(/\r\n/g)].length;
-    x = xSubV;
-    doc.text(p.unitValue, x, y, { align: 'right' });
-    x = xTotalV;
-    doc.text(p.totalValue, x, y, { align: 'right' });
-  });
 }
 
 function setBaseFontToFill(params: SetBaseFontToFillParams) {
