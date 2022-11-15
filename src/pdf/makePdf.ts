@@ -4,7 +4,7 @@ import { pxToCm, pxToPt } from '../utils/lengthUnits.util';
 
 import type { ProductToSubmit, ResultSubmit } from 'pages/invoices/new';
 
-const DRAW_ALL_RECTS = true;
+const DRAW_ALL_RECTS = false;
 const COLOR_RED = '#f00';
 const COLOR_BLACK = '#000';
 const NORMAL_FONT_SIZE_IN_PX = 16; // 1.0rem -> 16px
@@ -30,9 +30,9 @@ export function generatePDF(props: generatePDFProps) {
   // +++ products +++
   drawProducts({ doc, products: data.products });
   // +++ footer +++
-  setBaseFontToFill({ doc });
+  setBaseFontToFill({ doc, fontWeight: 'bold' });
   drawTotalToWord({ doc, value: data.totalToWords });
-  setBaseFontToFill({ doc, size: 'small' });
+  setBaseFontToFill({ doc, size: 'small', fontWeight: 'bold' });
   drawSubtotal({ doc, value: data.invoiceTotalValue });
   drawTotal({ doc, value: data.invoiceTotalValue });
   // +++ save or preview PDF +++
@@ -43,7 +43,7 @@ function drawAllRects({ doc }: BaseDrawerFn) {
   doc.rect(0.7, 1.1, 18.5, 19.9);
   // +++ header +++
   doc.rect(14.9, 1.4, 4.0, 1.0);
-  doc.rect(0.7, 2.7, 10.5, 1.9);
+  doc.rect(0.7, 2.7, 11.0, 1.9);
   doc.rect(3.0, 3.0, 7.5, 1.4);
   doc.rect(11.5, 2.7, 7.7, 1.9);
   doc.rect(15.3, 2.7, 3.9, 0.65);
@@ -125,7 +125,7 @@ function drawProducts(props: DrawerFnProducts) {
     doc.text(p.unitValue, x, y, { align: 'right' });
     x = xTotalV;
     doc.text(p.totalValue, x, y, { align: 'right' });
-    y += Y_SPACE * 1.5;
+    y += Y_SPACE * 2.0;
   });
 }
 

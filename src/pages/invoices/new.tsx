@@ -68,7 +68,6 @@ function NewInvoicePage() {
       },
       { products: Array(lengthProducts).fill({}) } as ResultSubmit,
     );
-    console.info(result);
     const isPreview = event.nativeEvent.submitter?.id === `btn-${PREVIEW_PDF_ID}`;
     const genPdf = generatePDF({ isPreview, data: result  });
     if (isPreview) {
