@@ -23,13 +23,14 @@ import {
   NumberInput,
   NumberInputField,
   NumberInputStepper,
+  Switch,
   Text,
   Textarea,
   useDisclosure,
   useToast,
   VStack,
 } from '@chakra-ui/react';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MinusIcon, PlusSquareIcon } from '@chakra-ui/icons';
 
 import { generatePDF } from '../../pdf/makePdf';
@@ -40,8 +41,11 @@ const PREVIEW_PDF_ID = 'preview-pdf';
 
 function NewInvoicePage() {
   const [src, setSrc] = useState<unknown>('');
+  const [toggleEnableLines, setToggleEnableLines] = useState(false);
 
   const { isOpen, onOpen, onClose } = useDisclosure()
+
+  const handleToggleEnableLines = () => setToggleEnableLines((v) => !v);
 
   const handleOnSubmit = (event: BaseSyntheticEvent<SubmitEvent>) => {
     event.preventDefault();
@@ -69,7 +73,7 @@ function NewInvoicePage() {
       { products: Array(lengthProducts).fill({}) } as ResultSubmit,
     );
     const isPreview = event.nativeEvent.submitter?.id === `btn-${PREVIEW_PDF_ID}`;
-    const genPdf = generatePDF({ isPreview, data: result  });
+    const genPdf = generatePDF({ isPreview, toggleEnableLines, data: result });
     if (isPreview) {
       setSrc(genPdf);
       onOpen();
@@ -127,19 +131,32 @@ function NewInvoicePage() {
             <Textarea isRequired name='totalToWords' placeholder='Precio total en palabras' />
           </FormControl>
 
-          <HStack justifyContent='space-evenly' spacing={2}>
-            <Button
-              id={`btn-${PREVIEW_PDF_ID}`}
-              type='submit'
-              variant='outline'
-              colorScheme='twitter'
-            >
-              Vista Previa
-            </Button>
-            <Button id='btn-save-pdf' type='submit' variant='solid' colorScheme='linkedin'>
-              Generar Factura
-            </Button>
-          </HStack>
+          <VStack>
+            <FormControl display='flex' alignItems='center' justifyContent='center'>
+              <FormLabel htmlFor='enable-lines' color='orange.200'>
+                Activar divisiones (opcional)
+              </FormLabel>
+              <Switch
+                id='enable-lines'
+                colorScheme='orange'
+                isChecked={toggleEnableLines}
+                onChange={handleToggleEnableLines}
+              />
+            </FormControl>
+            <HStack width='100%' justifyContent='space-evenly' spacing={2}>
+              <Button
+                id={`btn-${PREVIEW_PDF_ID}`}
+                type='submit'
+                variant='outline'
+                colorScheme='twitter'
+              >
+                Vista Previa
+              </Button>
+              <Button id='btn-save-pdf' type='submit' variant='solid' colorScheme='linkedin'>
+                Generar Factura
+              </Button>
+            </HStack>
+          </VStack>
         </VStack>
       </Box>
 
