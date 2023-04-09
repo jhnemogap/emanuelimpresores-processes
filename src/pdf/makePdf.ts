@@ -4,7 +4,6 @@ import { pxToCm, pxToPt } from '../utils/lengthUnits.util';
 
 import type { ProductToSubmit, ResultSubmit } from 'pages/invoices/new';
 
-const DRAW_ALL_RECTS = false;
 const COLOR_RED = '#f00';
 const COLOR_BLACK = '#000';
 const NORMAL_FONT_SIZE_IN_PX = 16; // 1.0rem -> 16px
@@ -12,11 +11,11 @@ const SMALL_FONT_SIZE_IN_PX = NORMAL_FONT_SIZE_IN_PX * 0.75; // 0.75rem -> 12px
 let GLOBAL_FONT_SIZE_IN_PX = NORMAL_FONT_SIZE_IN_PX;
 
 export function generatePDF(props: generatePDFProps) {
-  const { data, isPreview = false } = props;
+  const { data, isPreview = false, toggleEnableLines = false } = props;
   const doc = new jsPDF({ unit: 'cm', format: [19.9, 22.0] });
   // +++ app +++
   doc.setLineWidth(0.01);
-  if (DRAW_ALL_RECTS) drawAllRects({ doc });
+  if (toggleEnableLines) drawAllRects({ doc });
   // +++ header +++
   setBaseFontToFill({ doc });
   drawInvoiceNumber({ doc, value: data.invoiceNumber });
@@ -163,7 +162,8 @@ interface DataSubmit {
 }
 
 interface generatePDFProps extends DataSubmit {
-  isPreview: boolean;
+  isPreview?: boolean;
+  toggleEnableLines?: boolean;
 }
 
 interface BaseDrawerFn {
